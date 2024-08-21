@@ -1,4 +1,18 @@
-# any-quantile
+# Any-Quantile Probabilistic Forecasting of Short-Term Electricity Demand
+
+## Citation
+If you use this code in any context, please cite the following paper:
+```
+@misc{smyl2024anyquantile,
+      title={Any-Quantile Probabilistic Forecasting of Short-Term Electricity Demand}, 
+      author={Slawek Smyl and Boris N. Oreshkin and Paweł Pełka and Grzegorz Dudek},
+      year={2024},
+      eprint={2404.17451},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2404.17451}, 
+}
+```
 
 ## Create workspace and clone this repository
 ```
