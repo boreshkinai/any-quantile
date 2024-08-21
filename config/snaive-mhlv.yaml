@@ -1,0 +1,47 @@
+logging.path: "./lightning_logs/${dataset.name}"
+logging.name: "model=${model._target_}-backbone=${model.nn.backbone._target_}-horizon=${dataset.horizon_length}-history=${dataset.history_length}-seed=${random.seed}"
+
+dataset._target_: dataset.ElectricityUnivariateDataModule
+dataset.name: "MHLV"
+dataset.num_workers: 4
+dataset.persistent_workers: True
+dataset.train_batch_size: 1024
+dataset.eval_batch_size: 1024
+dataset.horizon_length: 24
+dataset.history_length: 168
+dataset.split_boundaries: ['2006-01-01', '2016-01-01', '2017-01-01', '2018-01-01']
+dataset.fillna: 'ffill'
+dataset.train_step: 1
+dataset.eval_step: 24
+
+random.seed: 0
+
+trainer.max_epochs: 0
+trainer.check_val_every_n_epoch: 1
+trainer.log_every_n_steps: 100
+trainer.devices: 1
+trainer.accelerator: 'gpu'
+trainer.fast_dev_run: False
+trainer.limit_train_batches: 1
+trainer.limit_val_batches: null
+
+checkpoint.resume_ckpt: last
+checkpoint.save_top_k: 10
+checkpoint.ckpt_path: last
+
+model._target_: model.MlpForecaster
+model.input_horizon_len: "${dataset.history_length}"
+model.loss._target_: torch.nn.L1Loss
+
+model.nn.backbone._target_: modules.SNAIVE
+model.nn.backbone.size_in: "${dataset.history_length}"
+model.nn.backbone.size_out: "${dataset.horizon_length}"
+model.nn.backbone.lag: 168
+
+model.optimizer._target_: torch.optim.Adam
+model.optimizer.lr: 0.0005
+model.scheduler._target_: schedulers.InverseSquareRoot
+model.scheduler.warmup_updates: 800
+model.scheduler.warmup_end_lr: "${model.optimizer.lr}"
+
+# python run.py --config=config/snaive-mhlv.yaml
