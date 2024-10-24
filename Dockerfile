@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.13.0-cuda11.6-cudnn8-runtime as pytorch
+FROM pytorch/pytorch:2.3.1-cuda11.8-cudnn8-runtime as pytorch
 
 ENV PROJECT_PATH /workspace/any-quantile
 
