@@ -2,10 +2,8 @@ pytorch-lightning==1.9.5
 hydra-core==1.3.2 
 omegaconf==2.3.0 
 tensorboard==2.11.2
-torch==1.13.0+cu116 
-torchtext==0.14.0 
-torchmetrics==0.11.0 
-torchvision==0.14.0+cu116
+torch==2.3.1+cu118 
+torchvision==0.18.1+cu118
 pqdm   
 neuralforecast 
 datasetsforecast==0.0.7
