@@ -12,8 +12,8 @@ def _divide_no_nan(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
 
 class Coverage(Metric):
-    def __init__(self, compute_on_step=True, dist_sync_on_step=False, level=0.95):
-        super().__init__(compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step)
+    def __init__(self, dist_sync_on_step=False, level=0.95):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
 
         self.add_state("numerator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
         self.add_state("denominator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
@@ -52,8 +52,8 @@ class Coverage(Metric):
         
 
 class CRPS(Metric):
-    def __init__(self, compute_on_step=True, dist_sync_on_step=False, horizon=None):
-        super().__init__(compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step)
+    def __init__(self, dist_sync_on_step=False, horizon=None):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
 
         self.add_state("numerator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
         self.add_state("denominator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
@@ -82,8 +82,8 @@ class CRPS(Metric):
 
     
 class MAPE(Metric):
-    def __init__(self, compute_on_step=True, dist_sync_on_step=False, horizon=None):
-        super().__init__(compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step)
+    def __init__(self, dist_sync_on_step=False, horizon=None):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
 
         self.add_state("smape", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
         self.add_state("nsamples", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
@@ -106,8 +106,8 @@ class MAPE(Metric):
     
 
 class SMAPE(Metric):
-    def __init__(self, compute_on_step=True, dist_sync_on_step=False, horizon=None):
-        super().__init__(compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step)
+    def __init__(self, dist_sync_on_step=False, horizon=None):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
 
         self.add_state("smape", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
         self.add_state("nsamples", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
@@ -130,8 +130,8 @@ class SMAPE(Metric):
 
     
 class WAPE(Metric):
-    def __init__(self, compute_on_step=True, dist_sync_on_step=False, horizon=None):
-        super().__init__(compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step)
+    def __init__(self, dist_sync_on_step=False, horizon=None):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
 
         self.add_state("numerator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")
         self.add_state("denominator", default=torch.FloatTensor([0.0]), dist_reduce_fx="sum")

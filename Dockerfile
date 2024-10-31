@@ -3,7 +3,7 @@ FROM pytorch/pytorch:2.3.1-cuda11.8-cudnn8-runtime as pytorch
 ENV PROJECT_PATH /workspace/any-quantile
 
 RUN date
-RUN apt-get update && apt-get install -y locales && locale-gen en_US.UTF-8 && apt-get -y install git g++ zip unzip gnupg
+RUN apt-get update && apt-get install -y locales && locale-gen en_US.UTF-8 && apt-get -y install git g++ zip unzip gnupg wget
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8

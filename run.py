@@ -28,6 +28,7 @@ def run(cfg_yaml):
     logger = TensorBoardLogger(save_dir=cfg.logging.path, version=cfg.logging.name, name="")    
     
     dm = instantiate(cfg.dataset)
+    dm.prepare_data()
     
     # setup callbacks
     lr_monitor = LearningRateMonitor(logging_interval='step')

@@ -272,6 +272,135 @@ class ElectricityUnivariateDataModule(pl.LightningDataModule):
                           persistent_workers=self.persistent_workers,
                           num_workers=self.num_workers, collate_fn=collate_fn_flat_deal)
 
+
+def get_zip(url: str, name: str, path: str="/tmp/cache", unpack: bool=True):
+    dir = os.path.join(path, name)
+    os.makedirs(dir, exist_ok=True)
+    if url.startswith("kaggle"):
+        os.system(f"{url} --path {dir}")
+        zip_fname = os.path.join(dir, os.path.basename(url) + ".zip")
+    elif url.startswith("https://"):
+        zip_fname = f"{os.path.join(dir, os.path.basename(url))}"
+        os.system(f"wget -c --read-timeout=5 --tries=0 {url} -O {zip_fname}")
+    else:
+        assert False, f"URL download method is not implemented for {url}"
+    if unpack:
+        if zip_fname.endswith('.zip'):
+            os.system(f"unzip -u {zip_fname} -d {dir}")
+        elif zip_fname.endswith('.tgz') or zip_fname.endswith('.tar.gz'):
+            os.system(f"tar -xvzf {zip_fname} -C {dir}")
+    return dir
+
+
+class EMHIRESUnivariateDataModule(pl.LightningDataModule):
+    def __init__(self, 
+                 name: str = 'MHLV', 
+                 train_batch_size: int = 128, 
+                 eval_batch_size: int = None,
+                 num_workers: int = 4,
+                 persistent_workers: bool = True,
+                 horizon_length: int = 720,
+                 history_length: int = 720,
+                 split_proportions: List[float] = None,
+                 split_boundaries: List[str] = None,
+                 fillna: str = None,
+                 train_step: int = 1,
+                 eval_step: int = 1,
+                ):
+        super().__init__()
+        self.name = name
+        self.train_batch_size = train_batch_size
+        self.eval_batch_size = train_batch_size
+        if eval_batch_size is not None:
+            self.eval_batch_size = eval_batch_size
+        self.num_workers = num_workers
+        self.persistent_workers = persistent_workers
+        self.history_length = history_length
+        self.horizon_length = horizon_length
+        self.train_step = train_step
+        self.eval_step = eval_step
+        
+        if (split_proportions is not None) and (split_boundaries is not None):
+            raise Exception(f'Only split_proportions or split_boundaries can be set, not both')   
+        if split_proportions is not None:
+            self.split_boundaries = np.array([0] + split_proportions).cumsum()
+            assert self.split_boundaries[-1] == 1, "Split proportions must sum up to 1"
+        else:
+            self.split_boundaries = split_boundaries
+            
+        self.fillna = fillna
+    
+    @staticmethod
+    def prepare_data():
+        logger.info("Downloading datasets")
+        datasets_path = "data/emhires/datasets/"
+        pathlib.Path(datasets_path).mkdir(parents=True, exist_ok=True)
+
+        get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_PV_NUTS2.zip', 
+                name='emhires_pv', path="data/downloads", unpack=True)
+
+        get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_WIND_ONSHORE_NUTS2.zip', 
+                name='emhires_wind', path="data/downloads", unpack=True)
+
+    def setup(self, stage: str):
+        # Assign train/val datasets for use in dataloaders
+        if stage == "fit":
+            self.train_dataset = ElectricityUnivariateDataset(name=self.name, split='train', 
+                                                              split_start=self.split_boundaries[0],
+                                                              split_end=self.split_boundaries[1],
+                                                              horizon_length=self.horizon_length,
+                                                              history_length = self.history_length,
+                                                              fillna=self.fillna,
+                                                              step = self.train_step)
+            self.val_dataset = ElectricityUnivariateDataset(name=self.name, split='val', 
+                                                            split_start=self.split_boundaries[1],
+                                                            split_end=self.split_boundaries[2],
+                                                            horizon_length=self.horizon_length,
+                                                            history_length = self.history_length,
+                                                            fillna=self.fillna,
+                                                            step = self.eval_step)
+        # Assign test dataset for use in dataloader(s)
+        if stage == "test":
+            self.test_dataset = ElectricityUnivariateDataset(name=self.name, split='test', 
+                                                             split_start=self.split_boundaries[2],
+                                                             split_end=self.split_boundaries[3],
+                                                             horizon_length=self.horizon_length,
+                                                             history_length = self.history_length,
+                                                             fillna=np.Inf,
+                                                             step = self.eval_step)
+        if stage == "predict":
+            self.predict_dataset = ElectricityUnivariateDataset(name=self.name, split='test', 
+                                                                split_start=self.split_boundaries[2],
+                                                                split_end=self.split_boundaries[3],
+                                                                horizon_length=self.horizon_length,
+                                                                history_length = self.history_length,
+                                                                fillna=np.Inf,
+                                                                step = self.eval_step)
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.train_batch_size, 
+                          shuffle=True, pin_memory=True, 
+                          persistent_workers=self.persistent_workers,
+                          num_workers=self.num_workers, collate_fn=collate_fn_flat_deal)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.eval_batch_size, 
+                          shuffle=False, pin_memory=True, 
+                          persistent_workers=self.persistent_workers,
+                          num_workers=self.num_workers, collate_fn=collate_fn_flat_deal)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.eval_batch_size,
+                          shuffle=False, pin_memory=True, 
+                          persistent_workers=self.persistent_workers,
+                          num_workers=self.num_workers, collate_fn=collate_fn_flat_deal)
+
+    def predict_dataloader(self):
+        return DataLoader(self.predict_dataset, batch_size=self.eval_batch_size, 
+                          shuffle=False, pin_memory=True, 
+                          persistent_workers=self.persistent_workers,
+                          num_workers=self.num_workers, collate_fn=collate_fn_flat_deal)
+
     
 class LongHorizonUnivariateDataset(Dataset):
     def __init__(self, 

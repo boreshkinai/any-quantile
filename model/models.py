@@ -34,6 +34,7 @@ class MlpForecaster(pl.LightningModule):
         self.train_smape = SMAPE()
         self.val_smape = SMAPE()
         self.test_smape = SMAPE()
+        self.val_mape = MAPE()
         self.test_mape = MAPE()
         
     def shared_forward(self, x):
@@ -198,9 +199,10 @@ class AnyQuantileForecaster(MlpForecaster):
         y_hat = net_output['forecast'] # BxHxQ
         quantiles = net_output['quantiles'][:,None] # Bx1xQ
         
-        self.val_mse(y_hat[..., 0], batch['target'])
-        self.val_mae(y_hat[..., 0], batch['target'])
-        self.val_smape(y_hat[..., 0], batch['target'])
+        self.val_mse(y_hat[..., 0].contiguous(), batch['target'])
+        self.val_mae(y_hat[..., 0].contiguous(), batch['target'])
+        self.val_smape(y_hat[..., 0].contiguous(), batch['target'])
+        self.val_mape(y_hat[..., 0].contiguous(), batch['target'])
         self.val_crps(y_hat, batch['target'], q=quantiles)
         self.val_coverage(y_hat, batch['target'], q=quantiles)
                 
@@ -210,6 +212,8 @@ class AnyQuantileForecaster(MlpForecaster):
         self.log("val/mae", self.val_mae, on_step=False, on_epoch=True, 
                  prog_bar=False, logger=True, batch_size=batch_size)
         self.log("val/smape", self.val_smape, on_step=False, on_epoch=True, 
+                 prog_bar=False, logger=True, batch_size=batch_size)
+        self.log("val/mape", self.val_mape, on_step=False, on_epoch=True, 
                  prog_bar=False, logger=True, batch_size=batch_size)
         self.log("val/crps", self.val_crps, on_step=False, on_epoch=True, 
                  prog_bar=False, logger=True, batch_size=batch_size)
@@ -223,10 +227,10 @@ class AnyQuantileForecaster(MlpForecaster):
         y_hat = net_output['forecast'] # BxHxQ
         quantiles = net_output['quantiles'][:,None] # Bx1xQ
         
-        self.test_mse(y_hat[..., 0], batch['target'])
-        self.test_mae(y_hat[..., 0], batch['target'])
-        self.test_smape(y_hat[..., 0], batch['target'])
-        self.test_mape(y_hat[..., 0], batch['target'])
+        self.test_mse(y_hat[..., 0].contiguous(), batch['target'])
+        self.test_mae(y_hat[..., 0].contiguous(), batch['target'])
+        self.test_smape(y_hat[..., 0].contiguous(), batch['target'])
+        self.test_mape(y_hat[..., 0].contiguous(), batch['target'])
         self.test_crps(y_hat, batch['target'], q=quantiles)
                 
         batch_size=batch['history'].shape[0]

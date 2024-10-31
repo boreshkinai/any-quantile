@@ -1,0 +1,58 @@
+logging.path: "./lightning_logs/test/${dataset.name}"
+logging.name: "model=${model._target_}-backbone=${model.nn.backbone._target_}-history=${dataset.history_length}-lr=${model.optimizer.lr}-width=${model.nn.backbone.layer_width}-layers=${model.nn.backbone.num_layers}-blocks=${model.nn.backbone.num_blocks}-warmup=${model.scheduler.warmup_updates}-maxnorm=${model.max_norm}-loss=${model.loss._target_}-seed=${random.seed}"
+
+dataset._target_: dataset.EMHIRESUnivariateDataModule
+dataset.name: "MHLV"
+dataset.num_workers: 4
+dataset.persistent_workers: True
+dataset.train_batch_size: 1024
+dataset.eval_batch_size: 1024
+dataset.horizon_length: 48
+dataset.history_length: 168
+dataset.split_boundaries: ['2006-01-01', '2017-12-30', '2018-01-01', '2019-01-01']
+dataset.fillna: 'ffill'
+dataset.train_step: 1
+dataset.eval_step: 24
+
+random.seed: !!python/tuple [0,1,2,3,4,5,6,7] # 0,1,2,3,4,5,6,7,8
+
+trainer.max_epochs: 15
+trainer.check_val_every_n_epoch: 1
+trainer.log_every_n_steps: 100
+trainer.devices: 4
+trainer.accelerator: 'gpu'
+trainer.fast_dev_run: False
+trainer.limit_train_batches: null
+trainer.limit_val_batches: null
+
+checkpoint.resume_ckpt: last
+checkpoint.save_top_k: 2
+checkpoint.ckpt_path: last
+
+model._target_: model.AnyQuantileForecaster
+model.input_horizon_len: "${dataset.history_length}"
+model.loss._target_: losses.MQNLoss
+model.max_norm: False
+model.q_sampling: 'random_in_batch'
+model.q_distribution: 'uniform'
+model.q_parameter: 0.3
+
+model.nn.backbone._target_: modules.NBEATSAQFILM
+# NBEATSAQCAT NBEATSAQOUT NBEATSAQFILM 
+model.nn.backbone.dropout: 0.0
+model.nn.backbone.layer_width: 1024
+model.nn.backbone.num_layers: 3
+model.nn.backbone.num_blocks: 30
+model.nn.backbone.share: False
+model.nn.backbone.size_in: "${dataset.history_length}"
+model.nn.backbone.size_out: "${dataset.horizon_length}"
+model.nn.backbone.quantile_embed_dim: 64
+model.nn.backbone.quantile_embed_num: 100
+
+model.optimizer._target_: torch.optim.Adam
+model.optimizer.lr: 0.0005
+model.scheduler._target_: schedulers.InverseSquareRoot
+model.scheduler.warmup_updates: 400
+model.scheduler.warmup_end_lr: "${model.optimizer.lr}"
+
+# python run.py --config=config/nbeatsaq-emhires-test.yamls
