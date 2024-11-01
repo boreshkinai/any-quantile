@@ -336,11 +336,35 @@ class EMHIRESUnivariateDataModule(pl.LightningDataModule):
         datasets_path = "data/emhires/datasets/"
         pathlib.Path(datasets_path).mkdir(parents=True, exist_ok=True)
 
-        get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_PV_NUTS2.zip', 
-                name='emhires_pv', path="data/downloads", unpack=True)
+        logger.info("Download EMHIRES PV")
+        emhires_pv_parquet = 'data/emhires/pv_n2.parquet'
+        if os.path.isfile(emhires_pv_parquet):
+            logger.info(f"EMHIRES PV cached version found in {emhires_pv_parquet}")
+        else:
+            get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_PV_NUTS2.zip',
+                    name='emhires_pv', path="data/downloads", unpack=True)
+            logger.info("Clean, format, save EMHIRES PV")
+            df = pd.read_excel('data/downloads/emhires_pv/EMHIRES_PVGIS_TSh_CF_n2_19862015_reformatt.xlsx')
+            df.drop('SE33', axis=1, inplace=True)
+            df['time_step'] = pd.date_range(start='1986-01-01', periods=len(df), freq='h')
+            df = df.rename({'time_step': 'ds'}, axis=1).set_index('ds')
+            df.to_parquet(emhires_pv_parquet)
 
-        get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_WIND_ONSHORE_NUTS2.zip', 
-                name='emhires_wind', path="data/downloads", unpack=True)
+        logger.info("Download EMHIRES Wind")
+        emhires_wind_parquet = 'data/emhires/wind_n2.parquet'
+        if os.path.isfile(emhires_wind_parquet):
+            logger.info(f"EMHIRES WIND cached version found in {emhires_wind_parquet}")
+        else:
+            get_zip(url='https://zenodo.org/records/8340501/files/EMHIRES_WIND_ONSHORE_NUTS2.zip',
+                    name='emhires_wind', path="data/downloads", unpack=True)
+            logger.info("Clean, format, save EMHIRES WIND")
+            df = pd.read_excel('data/downloads/emhires_wind/EMHIRES_WIND_NUTS2_June2019.xlsx')
+            df.drop(['LI00', 'MT00'], axis=1, inplace=True)
+            df['time_step'] = pd.date_range(start='1986-01-01', periods=len(df), freq='h')
+            df = df.rename({'time_step': 'ds'}, axis=1).set_index('ds')
+            df.to_parquet(emhires_wind_parquet)
+
+        assert False
 
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
